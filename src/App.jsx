@@ -36,7 +36,7 @@ function Input({ label, type = "number", value, onChange, unit, min, style = {} 
     <div style={{ display: "flex", flexDirection: "column", gap: 4, ...style }}>
       <label style={{ fontFamily: fonts.body, fontSize: 12, color: palette.warmGray, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</label>
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <input type={type} value={value} min={min} onChange={e => onChange(e.target.value)} style={{ border: `1.5px solid ${palette.lightGray}`, borderRadius: 10, padding: "8px 12px", fontFamily: fonts.body, fontSize: 15, background: palette.cream, color: palette.deepOrange, fontWeight: 600, width: "100%", outline: "none" }} />
+        <input type={type} value={value} min={min} onChange={e => onChange(e.target.value === "" ? "" : String(parseInt(e.target.value, 10) || 0))} style={{ border: `1.5px solid ${palette.lightGray}`, borderRadius: 10, padding: "8px 12px", fontFamily: fonts.body, fontSize: 15, background: palette.cream, color: palette.deepOrange, fontWeight: 600, width: "100%", outline: "none" }} />
         {unit && <span style={{ fontFamily: fonts.body, fontSize: 13, color: palette.warmGray, whiteSpace: "nowrap" }}>{unit}</span>}
       </div>
     </div>
@@ -246,17 +246,17 @@ IMPORTANTE:
 - balance: evalúa los 4 grupos para bebé de 11 meses. JSON así: { "proteina": { "ok": true/false, "emoji": "🍗", "sugerencia": "ej: agrega pollo, lentejas o huevo" }, "carbohidrato": { "ok": true/false, "emoji": "🌾", "sugerencia": "ej: suma papa, arroz o fideos" }, "verdura_fruta": { "ok": true/false, "emoji": "🥦", "sugerencia": "ej: incorpora zanahoria o zapallo" }, "grasa_saludable": { "ok": true/false, "emoji": "🥑", "sugerencia": "ej: un toque de aceite de oliva o palta" } }${blwExtra}`;
 
     try {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1200,
-          messages: [{ role: "user", content: prompt }],
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { maxOutputTokens: 1200, temperature: 0.7 },
         }),
       });
       const data = await response.json();
-      const text = data.content?.map(i => i.text || "").join("") || "";
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
       const clean = text.replace(/```json|```/g, "").trim();
       const parsed = JSON.parse(clean);
       setRecipe({ ...parsed, mealStyle });
